@@ -53,90 +53,92 @@
 // Class definition
 // ====================================================================================================================
 
-enum SAOCabacStateLablesRDO //CABAC state labels
+enum SAOCabacStateLablesRDO // CABAC state labels
 {
-  SAO_CABACSTATE_PIC_INIT =0,
-  SAO_CABACSTATE_BLK_CUR,
-  SAO_CABACSTATE_BLK_NEXT,
-  SAO_CABACSTATE_BLK_MID,
-  SAO_CABACSTATE_BLK_TEMP,
-  NUM_SAO_CABACSTATE_LABELS
+	SAO_CABACSTATE_PIC_INIT = 0,
+	SAO_CABACSTATE_BLK_CUR,
+	SAO_CABACSTATE_BLK_NEXT,
+	SAO_CABACSTATE_BLK_MID,
+	SAO_CABACSTATE_BLK_TEMP,
+	NUM_SAO_CABACSTATE_LABELS
 };
 
-struct SAOStatData //data structure for SAO statistics
+struct SAOStatData // data structure for SAO statistics
 {
-  Int64 diff[MAX_NUM_SAO_CLASSES];
-  Int64 count[MAX_NUM_SAO_CLASSES];
+	Int64 diff[MAX_NUM_SAO_CLASSES];
+	Int64 count[MAX_NUM_SAO_CLASSES];
 
-  SAOStatData(){}
-  ~SAOStatData(){}
-  Void reset()
-  {
-    ::memset(diff, 0, sizeof(Int64)*MAX_NUM_SAO_CLASSES);
-    ::memset(count, 0, sizeof(Int64)*MAX_NUM_SAO_CLASSES);
-  }
-  const SAOStatData& operator=(const SAOStatData& src)
-  {
-    ::memcpy(diff, src.diff, sizeof(Int64)*MAX_NUM_SAO_CLASSES);
-    ::memcpy(count, src.count, sizeof(Int64)*MAX_NUM_SAO_CLASSES);
-    return *this;
-  }
-  const SAOStatData& operator+= (const SAOStatData& src)
-  {
-    for(Int i=0; i< MAX_NUM_SAO_CLASSES; i++)
-    {
-      diff[i] += src.diff[i];
-      count[i] += src.count[i];
-    }
-    return *this;
-  }
+	SAOStatData() {}
+	~SAOStatData() {}
+	Void reset()
+	{
+		::memset(diff, 0, sizeof(Int64) * MAX_NUM_SAO_CLASSES);
+		::memset(count, 0, sizeof(Int64) * MAX_NUM_SAO_CLASSES);
+	}
+	const SAOStatData &operator=(const SAOStatData &src)
+	{
+		::memcpy(diff, src.diff, sizeof(Int64) * MAX_NUM_SAO_CLASSES);
+		::memcpy(count, src.count, sizeof(Int64) * MAX_NUM_SAO_CLASSES);
+		return *this;
+	}
+	const SAOStatData &operator+=(const SAOStatData &src)
+	{
+		for (Int i = 0; i < MAX_NUM_SAO_CLASSES; i++)
+		{
+			diff[i] += src.diff[i];
+			count[i] += src.count[i];
+		}
+		return *this;
+	}
 };
 
 class TEncSampleAdaptiveOffset : public TComSampleAdaptiveOffset
 {
 public:
-  TEncSampleAdaptiveOffset();
-  virtual ~TEncSampleAdaptiveOffset();
+	TEncSampleAdaptiveOffset();
+	virtual ~TEncSampleAdaptiveOffset();
 
-  //interface
-  Void createEncData(Bool isPreDBFSamplesUsed);
-  Void destroyEncData();
-  Void initRDOCabacCoder(TEncSbac* pcRDGoOnSbacCoder, TComSlice* pcSlice) ;
-  Void resetEncoderDecisions();
-  Void SAOProcess(TComPic* pPic, Bool* sliceEnabled, const Double *lambdas, const Bool bTestSAODisableAtPictureLevel, const Double saoEncodingRate, const Double saoEncodingRateChroma, const Bool isPreDBFSamplesUsed);
-public: //methods
-  Void getPreDBFStatistics(TComPic* pPic);
-private: //methods
-  Void getStatistics(SAOStatData*** blkStats, TComPicYuv* orgYuv, TComPicYuv* srcYuv,TComPic* pPic, Bool isCalculatePreDeblockSamples = false);
-  Void decidePicParams(Bool* sliceEnabled, const TComPic* pic, const Double saoEncodingRate, const Double saoEncodingRateChroma);
-  Void decideBlkParams(TComPic* pic, Bool* sliceEnabled, SAOStatData*** blkStats, TComPicYuv* srcYuv, TComPicYuv* resYuv, SAOBlkParam* reconParams, SAOBlkParam* codedParams, const Bool bTestSAODisableAtPictureLevel, const Double saoEncodingRate, const Double saoEncodingRateChroma);
-  Void getBlkStats(const ComponentID compIdx, const Int channelBitDepth, SAOStatData* statsDataTypes, Pel* srcBlk, Pel* orgBlk, Int srcStride, Int orgStride, Int width, Int height, Bool isLeftAvail,  Bool isRightAvail, Bool isAboveAvail, Bool isBelowAvail, Bool isAboveLeftAvail, Bool isAboveRightAvail, Bool isCalculatePreDeblockSamples);
-  Void deriveModeNewRDO(const BitDepths &bitDepths, Int ctuRsAddr, SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES], Bool* sliceEnabled, SAOStatData*** blkStats, SAOBlkParam& modeParam, Double& modeNormCost, TEncSbac** cabacCoderRDO, Int inCabacLabel);
-  Void deriveModeMergeRDO(const BitDepths &bitDepths, Int ctuRsAddr, SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES], Bool* sliceEnabled, SAOStatData*** blkStats, SAOBlkParam& modeParam, Double& modeNormCost, TEncSbac** cabacCoderRDO, Int inCabacLabel);
-  Int64 getDistortion(const Int channelBitDepth, Int typeIdc, Int typeAuxInfo, Int* offsetVal, SAOStatData& statData);
-  Void deriveOffsets(ComponentID compIdx, const Int channelBitDepth, Int typeIdc, SAOStatData& statData, Int* quantOffsets, Int& typeAuxInfo);
-  inline Int64 estSaoDist(Int64 count, Int64 offset, Int64 diffSum, Int shift);
-  inline Int estIterOffset(Int typeIdx, Double lambda, Int offsetInput, Int64 count, Int64 diffSum, Int shift, Int bitIncrease, Int64& bestDist, Double& bestCost, Int offsetTh );
-  Void addPreDBFStatistics(SAOStatData*** blkStats);
-private: //members
-  //for RDO
-  TEncSbac**             m_pppcRDSbacCoder;
-  TEncSbac*              m_pcRDGoOnSbacCoder;
+	// interface
+	Void createEncData(Bool isPreDBFSamplesUsed);
+	Void destroyEncData();
+	Void initRDOCabacCoder(TEncSbac *pcRDGoOnSbacCoder, TComSlice *pcSlice);
+	Void resetEncoderDecisions();
+	Void SAOProcess(TComPic *pPic, Bool *sliceEnabled, const Double *lambdas, const Bool bTestSAODisableAtPictureLevel, const Double saoEncodingRate, const Double saoEncodingRateChroma, const Bool isPreDBFSamplesUsed);
+
+public: // methods
+	Void getPreDBFStatistics(TComPic *pPic);
+
+private: // methods
+	Void getStatistics(SAOStatData ***blkStats, TComPicYuv *orgYuv, TComPicYuv *srcYuv, TComPic *pPic, Bool isCalculatePreDeblockSamples = false);
+	Void decidePicParams(Bool *sliceEnabled, const TComPic *pic, const Double saoEncodingRate, const Double saoEncodingRateChroma);
+	Void decideBlkParams(TComPic *pic, Bool *sliceEnabled, SAOStatData ***blkStats, TComPicYuv *srcYuv, TComPicYuv *resYuv, SAOBlkParam *reconParams, SAOBlkParam *codedParams, const Bool bTestSAODisableAtPictureLevel, const Double saoEncodingRate, const Double saoEncodingRateChroma);
+	Void getBlkStats(const ComponentID compIdx, const Int channelBitDepth, SAOStatData *statsDataTypes, Pel *srcBlk, Pel *orgBlk, Int srcStride, Int orgStride, Int width, Int height, Bool isLeftAvail, Bool isRightAvail, Bool isAboveAvail, Bool isBelowAvail, Bool isAboveLeftAvail, Bool isAboveRightAvail, Bool isCalculatePreDeblockSamples);
+	Void deriveModeNewRDO(const BitDepths &bitDepths, Int ctuRsAddr, SAOBlkParam *mergeList[NUM_SAO_MERGE_TYPES], Bool *sliceEnabled, SAOStatData ***blkStats, SAOBlkParam &modeParam, Double &modeNormCost, TEncSbac **cabacCoderRDO, Int inCabacLabel);
+	Void deriveModeMergeRDO(const BitDepths &bitDepths, Int ctuRsAddr, SAOBlkParam *mergeList[NUM_SAO_MERGE_TYPES], Bool *sliceEnabled, SAOStatData ***blkStats, SAOBlkParam &modeParam, Double &modeNormCost, TEncSbac **cabacCoderRDO, Int inCabacLabel);
+	Int64 getDistortion(const Int channelBitDepth, Int typeIdc, Int typeAuxInfo, Int *offsetVal, SAOStatData &statData);
+	Void deriveOffsets(ComponentID compIdx, const Int channelBitDepth, Int typeIdc, SAOStatData &statData, Int *quantOffsets, Int &typeAuxInfo);
+	inline Int64 estSaoDist(Int64 count, Int64 offset, Int64 diffSum, Int shift);
+	inline Int estIterOffset(Int typeIdx, Double lambda, Int offsetInput, Int64 count, Int64 diffSum, Int shift, Int bitIncrease, Int64 &bestDist, Double &bestCost, Int offsetTh);
+	Void addPreDBFStatistics(SAOStatData ***blkStats);
+
+private: // members
+	// for RDO
+	TEncSbac **m_pppcRDSbacCoder;
+	TEncSbac *m_pcRDGoOnSbacCoder;
 #if FAST_BIT_EST
-  TEncBinCABACCounter**  m_pppcBinCoderCABAC;
+	TEncBinCABACCounter **m_pppcBinCoderCABAC;
 #else
-  TEncBinCABAC**         m_pppcBinCoderCABAC;
+	TEncBinCABAC **m_pppcBinCoderCABAC;
 #endif
-  Double                 m_lambda[MAX_NUM_COMPONENT];
+	Double m_lambda[MAX_NUM_COMPONENT];
 
-  //statistics
-  SAOStatData***         m_statData; //[ctu][comp][classes]
-  SAOStatData***         m_preDBFstatData;
-  Double                 m_saoDisabledRate[MAX_NUM_COMPONENT][MAX_TLAYER];
-  Int                    m_skipLinesR[MAX_NUM_COMPONENT][NUM_SAO_NEW_TYPES];
-  Int                    m_skipLinesB[MAX_NUM_COMPONENT][NUM_SAO_NEW_TYPES];
+	// statistics
+	SAOStatData ***m_statData; //[ctu][comp][classes]
+	SAOStatData ***m_preDBFstatData;
+	Double m_saoDisabledRate[MAX_NUM_COMPONENT][MAX_TLAYER];
+	Int m_skipLinesR[MAX_NUM_COMPONENT][NUM_SAO_NEW_TYPES];
+	Int m_skipLinesB[MAX_NUM_COMPONENT][NUM_SAO_NEW_TYPES];
 };
-
 
 //! \}
 
